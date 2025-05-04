@@ -12,11 +12,11 @@ It uses a Logistic Regression model trained on a public, ethically sourced datas
 
 ### Positive Sentiment
 
-<img src="showcase/positive_demo.png" width="600"/>
+<img src="Showcase/positive_demo.png" width="600"/>
 
 ### Negative Sentiment
 
-<img src="showcase/negative_demo.png" width="600"/>
+<img src="Showcase/negative_demo.png" width="600"/>
 
 
 ---
