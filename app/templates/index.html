@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emoflagger</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #f1f1f1;
+      padding: 3rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      color: #1e90ff;
+      margin-bottom: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      font-size: 1rem;
+      padding: 1rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #1e1e1e;
+      color: #fff;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      background-color: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0d6efd;
+    }
+
+    .result {
+      margin-top: 2rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .positive { color: #4caf50; }
+    .neutral { color: #ffc107; }
+    .negative { color: #f44336; }
+
+    table {
+      margin-top: 2rem;
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e1e1e;
+    }
+
+    th, td {
+      padding: 0.6rem 1rem;
+      border: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background-color: #222;
+    }
+
+    .download {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Emoflagger</h1>
+  <p>Enter a sentence to analyze its emotional sentiment:</p>
+
+  <textarea id="inputText" placeholder="Type something here..."></textarea><br />
+  <button onclick="analyzeSentiment()">Analyze</button>
+  <button class="download" onclick="downloadCSV()">Download Report</button>
+
+  <div class="result" id="resultBox"></div>
+
+  <table id="historyTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>Text</th>
+        <th>Sentiment</th>
+        <th>Confidence (%)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const history = [];
+
+    async function analyzeSentiment() {
+      const input = document.getElementById("inputText").value;
+      const response = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: input }),
+      });
+
+      const result = await response.json();
+      const sentiment = result.sentiment;
+      const confidence = result.confidence;
+
+      const className = sentiment.toLowerCase();
+      const resultBox = document.getElementById("resultBox");
+      resultBox.className = `result ${className}`;
+      resultBox.textContent = `Sentiment: ${sentiment} (${confidence}%)`;
+
+      history.push({ text: input, sentiment, confidence });
+      updateTable();
+    }
+
+    function updateTable() {
+      const table = document.getElementById("historyTable");
+      const tbody = table.querySelector("tbody");
+      tbody.innerHTML = "";
+
+      history.slice().reverse().forEach(entry => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${entry.text}</td>
+          <td>${entry.sentiment}</td>
+          <td>${entry.confidence}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      table.style.display = history.length > 0 ? "table" : "none";
+    }
+
+    function downloadCSV() {
+      if (history.length === 0) return;
+
+      let csv = "Text,Sentiment,Confidence (%)\n";
+      history.forEach(row => {
+        csv += `"${row.text.replace(/"/g, '""')}",${row.sentiment},${row.confidence}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "emoflagger_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
